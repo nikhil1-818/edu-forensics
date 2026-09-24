@@ -1,0 +1,6 @@
+{
+  "name": "EDUFORENSICS",
+  "description": "AI-Powered Education Intelligence & Digital Twin. Forensically analyze academic failure, forecast emerging risks, and simulate curriculum interventions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
