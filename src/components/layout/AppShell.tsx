@@ -33,7 +33,7 @@ interface AppShellProps {
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ currentPath, navigate, children }) => {
-  const { user, logout, loginAsDemo, hasRole } = useAuth();
+  const { user, logout, switchRole, loginAsDemo, hasRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,7 +97,11 @@ export const AppShell: React.FC<AppShellProps> = ({ currentPath, navigate, child
   ];
 
   const handleRoleSwitch = async (role: UserRole) => {
-    await loginAsDemo(role);
+    try {
+      await switchRole(role);
+    } catch {
+      await loginAsDemo(role);
+    }
     setIsProfileMenuOpen(false);
   };
 
@@ -212,11 +216,31 @@ export const AppShell: React.FC<AppShellProps> = ({ currentPath, navigate, child
               className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white transition-colors border border-transparent hover:border-slate-200 cursor-pointer text-left"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-semibold text-xs font-mono shrink-0">
-                  {user?.name ? user.name[0] : 'U'}
-                </div>
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-200"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-semibold text-xs font-mono shrink-0">
+                    {user?.name ? user.name[0] : 'U'}
+                  </div>
+                )}
                 <div className="truncate">
-                  <p className="text-xs font-semibold text-slate-900 truncate">{user?.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-semibold text-slate-900 truncate">{user?.name}</p>
+                    {user?.authProvider === 'google' && (
+                      <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-blue-50 text-blue-700 font-bold border border-blue-200">
+                        G
+                      </span>
+                    )}
+                    {user?.authProvider === 'phone' && (
+                      <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                        SMS
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] text-slate-500 font-mono truncate">
                     {user?.role.replace('_', ' ')}
                   </p>
@@ -322,6 +346,18 @@ export const AppShell: React.FC<AppShellProps> = ({ currentPath, navigate, child
               <Building2 className="w-3.5 h-3.5 text-red-700" />
               <span>National Polytech Univ</span>
             </div>
+
+            {/* Active Session Role Switcher Button */}
+            <button
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 bg-red-50 hover:bg-red-100/80 border border-red-200/80 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+              title="Click to redefine session role"
+            >
+              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+              <span className="font-mono text-[11px] text-red-700">Role:</span>
+              <span className="font-medium text-slate-900">{user?.role.replace('_', ' ')}</span>
+              <ChevronDown className="w-3 h-3 text-slate-500" />
+            </button>
 
             {/* Notification Bell */}
             <button

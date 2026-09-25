@@ -711,6 +711,19 @@ export const SEED_REPORTS: InstitutionalReport[] = [
 
 export const SEED_USERS: User[] = [
   {
+    id: 'usr-nikhil',
+    name: 'Nikhil Tyagi',
+    email: 'nikhiltyagi8093@gmail.com',
+    phoneNumber: '+91 98765 43210',
+    role: 'INSTITUTION_ADMIN',
+    institutionId: 'inst-01',
+    department: 'Academic Intelligence & Institutional Research',
+    status: 'active',
+    authProvider: 'google',
+    createdAt: '2025-01-01',
+    lastLogin: '2026-09-25 12:25',
+  },
+  {
     id: 'usr-super',
     name: 'Dr. Evelyn Vance',
     email: 'superadmin@demo.edu',

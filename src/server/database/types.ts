@@ -7,6 +7,9 @@ export interface User {
   role: UserRole;
   institutionId: string;
   department?: string;
+  phoneNumber?: string;
+  avatar?: string;
+  authProvider?: 'password' | 'google' | 'phone';
   status: 'active' | 'suspended' | 'invited';
   createdAt: string;
   lastLogin?: string;

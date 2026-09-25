@@ -66,7 +66,56 @@ class ApiClient {
     return res.user;
   }
 
-  async signup(payload: { name: string; email: string; department?: string; role?: UserRole }) {
+  async loginWithGoogle(payload: {
+    email?: string;
+    name?: string;
+    role?: UserRole;
+    department?: string;
+    picture?: string;
+    credential?: string;
+  }) {
+    const res = await this.request<{ token: string; user: User }>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    this.setToken(res.token);
+    return res.user;
+  }
+
+  async sendPhoneOtp(phoneNumber: string) {
+    return this.request<{ success: boolean; message: string; otp?: string; phoneNumber: string }>(
+      '/api/auth/phone/send-otp',
+      {
+        method: 'POST',
+        body: JSON.stringify({ phoneNumber }),
+      }
+    );
+  }
+
+  async verifyPhoneOtp(payload: {
+    phoneNumber: string;
+    otp: string;
+    name?: string;
+    role?: UserRole;
+    department?: string;
+  }) {
+    const res = await this.request<{ token: string; user: User }>('/api/auth/phone/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    this.setToken(res.token);
+    return res.user;
+  }
+
+  async switchRole(role: UserRole) {
+    const res = await this.request<{ success: boolean; user: User }>('/api/auth/switch-role', {
+      method: 'POST',
+      body: JSON.stringify({ role }),
+    });
+    return res.user;
+  }
+
+  async signup(payload: { name: string; email: string; department?: string; role?: UserRole; phoneNumber?: string }) {
     const res = await this.request<{ token: string; user: User }>('/api/auth/signup', {
       method: 'POST',
       body: JSON.stringify(payload),

@@ -63,13 +63,15 @@ const requireRoles = (allowedRoles: UserRole[]) => {
 };
 
 // -------------------------------------------------------------
-// AUTH ROUTES
+// AUTH ROUTES & OTP STORE
 // -------------------------------------------------------------
+const phoneOtpStore = new Map<string, { code: string; expiresAt: number }>();
+
 app.post('/api/auth/login', (req: Request, res: Response) => {
   const { email, password, role } = req.body;
 
   // Demo direct role login support
-  if (role) {
+  if (role && !email) {
     const matched = db.users.find(u => u.role === role);
     if (matched) {
       const token = `session-${matched.id}-${Date.now()}`;
@@ -85,20 +87,204 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
 
   const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
   if (!user) {
-    return res.status(401).json({ error: 'Invalid credentials. Please verify your institutional email.' });
+    return res.status(401).json({ error: 'Invalid credentials. Please verify your institutional email or use Google/Phone sign in.' });
+  }
+
+  // Update role if user explicitly customized it
+  if (role && ['SUPER_ADMIN', 'INSTITUTION_ADMIN', 'FACULTY', 'ANALYST'].includes(role)) {
+    user.role = role as UserRole;
   }
 
   // Generate session token
   const token = `token-${user.id}-${Date.now()}`;
   db.activeSessions.set(token, user);
   user.lastLogin = new Date().toISOString().replace('T', ' ').substring(0, 19);
-  db.logAudit(user.email, 'USER_LOGIN', 'Auth System', 'Standard password authentication succeeded');
+  db.logAudit(user.email, 'USER_LOGIN', 'Auth System', `Password authentication succeeded with role ${user.role}`);
 
   res.json({ token, user });
 });
 
+// Google Account Authorised Login
+app.post('/api/auth/google', (req: Request, res: Response) => {
+  try {
+    const { email, name, role, department, picture, credential } = req.body;
+
+    let targetEmail = email;
+    let targetName = name;
+    let targetPicture = picture;
+
+    // Decode Google JWT if credential provided
+    if (credential && typeof credential === 'string') {
+      try {
+        const parts = credential.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+          if (payload.email) targetEmail = payload.email;
+          if (payload.name) targetName = payload.name;
+          if (payload.picture) targetPicture = payload.picture;
+        }
+      } catch (decodeErr) {
+        console.warn('Failed to parse Google JWT credential payload, using body params', decodeErr);
+      }
+    }
+
+    if (!targetEmail) {
+      // Default to the developer's registered user email if none provided
+      targetEmail = 'nikhiltyagi8093@gmail.com';
+    }
+
+    targetEmail = targetEmail.trim().toLowerCase();
+
+    // Check if user already exists
+    let user = db.users.find(u => u.email.toLowerCase() === targetEmail);
+
+    const assignedRole: UserRole =
+      role && ['SUPER_ADMIN', 'INSTITUTION_ADMIN', 'FACULTY', 'ANALYST'].includes(role)
+        ? (role as UserRole)
+        : user?.role || 'INSTITUTION_ADMIN';
+
+    if (user) {
+      user.role = assignedRole;
+      if (targetName) user.name = targetName;
+      if (targetPicture) user.avatar = targetPicture;
+      user.authProvider = 'google';
+      user.lastLogin = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    } else {
+      user = {
+        id: `usr-g-${Date.now()}`,
+        name: targetName || targetEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+        email: targetEmail,
+        role: assignedRole,
+        institutionId: 'inst-01',
+        department: department || 'Academic Operations & Intelligence',
+        status: 'active',
+        authProvider: 'google',
+        avatar: targetPicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(targetName || targetEmail)}&background=b91c1c&color=fff`,
+        createdAt: new Date().toISOString().substring(0, 10),
+        lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      };
+      db.users.push(user);
+    }
+
+    const token = `token-g-${user.id}-${Date.now()}`;
+    db.activeSessions.set(token, user);
+    db.logAudit(user.email, 'GOOGLE_AUTH_LOGIN', 'Auth System', `Authenticated via Google Single Sign-On with role ${user.role}`);
+
+    res.json({ token, user });
+  } catch (error: any) {
+    console.error('Google Auth Error:', error);
+    res.status(500).json({ error: 'Google Authentication failed. Please try again.' });
+  }
+});
+
+// Phone Number OTP: Send OTP
+app.post('/api/auth/phone/send-otp', (req: Request, res: Response) => {
+  const { phoneNumber } = req.body;
+  if (!phoneNumber || phoneNumber.trim().length < 6) {
+    return res.status(400).json({ error: 'Valid phone number with country code is required (e.g. +91 98765 43210).' });
+  }
+
+  const cleanPhone = phoneNumber.trim().replace(/[^\d+]/g, '');
+  // Generate random 6-digit OTP code
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  phoneOtpStore.set(cleanPhone, {
+    code: otp,
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+  });
+
+  db.logAudit(cleanPhone, 'PHONE_OTP_DISPATCH', 'Auth System', `Dispatched SMS verification OTP for ${cleanPhone}`);
+
+  res.json({
+    success: true,
+    message: `Verification code dispatched to ${cleanPhone}`,
+    phoneNumber: cleanPhone,
+    otp, // provided directly for frictionless testing and verification
+  });
+});
+
+// Phone Number OTP: Verify OTP and Login
+app.post('/api/auth/phone/verify-otp', (req: Request, res: Response) => {
+  const { phoneNumber, otp, name, role, department } = req.body;
+  if (!phoneNumber || !otp) {
+    return res.status(400).json({ error: 'Phone number and verification OTP code are required.' });
+  }
+
+  const cleanPhone = phoneNumber.trim().replace(/[^\d+]/g, '');
+  const record = phoneOtpStore.get(cleanPhone);
+
+  // Validate OTP code (matches generated code or universal test codes 809321 or 123456)
+  const isValid =
+    (record && record.code === otp.trim() && Date.now() < record.expiresAt) ||
+    otp.trim() === '809321' ||
+    otp.trim() === '123456';
+
+  if (!isValid) {
+    return res.status(401).json({ error: 'Invalid or expired SMS OTP code. Please request a new code.' });
+  }
+
+  phoneOtpStore.delete(cleanPhone);
+
+  const assignedRole: UserRole =
+    role && ['SUPER_ADMIN', 'INSTITUTION_ADMIN', 'FACULTY', 'ANALYST'].includes(role)
+      ? (role as UserRole)
+      : 'FACULTY';
+
+  let user = db.users.find(u => u.phoneNumber === cleanPhone || (u.email && u.email.includes(cleanPhone.replace('+', ''))));
+
+  if (user) {
+    user.role = assignedRole;
+    if (name) user.name = name;
+    user.phoneNumber = cleanPhone;
+    user.authProvider = 'phone';
+    user.lastLogin = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  } else {
+    const rawNumber = cleanPhone.replace(/[^\d]/g, '');
+    user = {
+      id: `usr-ph-${Date.now()}`,
+      name: name || `Faculty Member (${cleanPhone.slice(-4)})`,
+      email: `${rawNumber}@phone.eduforensics.edu`,
+      phoneNumber: cleanPhone,
+      role: assignedRole,
+      institutionId: 'inst-01',
+      department: department || 'Engineering & Science Faculty',
+      status: 'active',
+      authProvider: 'phone',
+      createdAt: new Date().toISOString().substring(0, 10),
+      lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 19),
+    };
+    db.users.push(user);
+  }
+
+  const token = `token-ph-${user.id}-${Date.now()}`;
+  db.activeSessions.set(token, user);
+  db.logAudit(user.email, 'PHONE_AUTH_LOGIN', 'Auth System', `Authenticated via Phone SMS OTP with role ${user.role}`);
+
+  res.json({ token, user });
+});
+
+// Role Switcher for active session
+app.post('/api/auth/switch-role', authenticate, (req: Request, res: Response) => {
+  const { role } = req.body;
+  const validRoles: UserRole[] = ['SUPER_ADMIN', 'INSTITUTION_ADMIN', 'FACULTY', 'ANALYST'];
+  if (!role || !validRoles.includes(role)) {
+    return res.status(400).json({ error: `Invalid role specified. Must be one of: ${validRoles.join(', ')}` });
+  }
+
+  const sessionUser = (req as any).user as User;
+  if (!sessionUser) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+
+  sessionUser.role = role as UserRole;
+  const inDb = db.users.find(u => u.id === sessionUser.id);
+  if (inDb) inDb.role = role as UserRole;
+
+  db.logAudit(sessionUser.email, 'ROLE_SWITCHED', 'Auth System', `User switched role to ${role}`);
+  res.json({ success: true, user: sessionUser });
+});
+
 app.post('/api/auth/signup', (req: Request, res: Response) => {
-  const { name, email, department, role } = req.body;
+  const { name, email, department, role, phoneNumber } = req.body;
   if (!name || !email) {
     return res.status(400).json({ error: 'Name and email are required.' });
   }
@@ -112,10 +298,12 @@ app.post('/api/auth/signup', (req: Request, res: Response) => {
     id: `usr-${Date.now()}`,
     name,
     email,
+    phoneNumber: phoneNumber || undefined,
     role: (role as UserRole) || 'FACULTY',
     institutionId: 'inst-01',
     department: department || 'Computer Science',
     status: 'active',
+    authProvider: 'password',
     createdAt: new Date().toISOString().substring(0, 10),
     lastLogin: new Date().toISOString().replace('T', ' ').substring(0, 19),
   };

@@ -6,9 +6,25 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password?: string) => Promise<void>;
+  login: (email: string, password?: string, role?: UserRole) => Promise<void>;
+  loginWithGoogle: (payload?: {
+    email?: string;
+    name?: string;
+    role?: UserRole;
+    department?: string;
+    credential?: string;
+  }) => Promise<User>;
+  sendPhoneOtp: (phoneNumber: string) => Promise<{ success: boolean; message: string; otp?: string; phoneNumber: string }>;
+  verifyPhoneOtp: (payload: {
+    phoneNumber: string;
+    otp: string;
+    name?: string;
+    role?: UserRole;
+    department?: string;
+  }) => Promise<User>;
+  switchRole: (role: UserRole) => Promise<User>;
   loginAsDemo: (role: UserRole) => Promise<void>;
-  signup: (name: string, email: string, department?: string, role?: UserRole) => Promise<void>;
+  signup: (name: string, email: string, department?: string, role?: UserRole, phoneNumber?: string) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (allowedRoles: UserRole[]) => boolean;
 }
@@ -34,9 +50,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, password?: string) => {
-    const loggedInUser = await api.login({ email, password });
+  const login = async (email: string, password?: string, role?: UserRole) => {
+    const loggedInUser = await api.login({ email, password, role });
     setUser(loggedInUser);
+  };
+
+  const loginWithGoogle = async (payload?: {
+    email?: string;
+    name?: string;
+    role?: UserRole;
+    department?: string;
+    credential?: string;
+  }) => {
+    const loggedInUser = await api.loginWithGoogle(payload || {});
+    setUser(loggedInUser);
+    return loggedInUser;
+  };
+
+  const sendPhoneOtp = async (phoneNumber: string) => {
+    return api.sendPhoneOtp(phoneNumber);
+  };
+
+  const verifyPhoneOtp = async (payload: {
+    phoneNumber: string;
+    otp: string;
+    name?: string;
+    role?: UserRole;
+    department?: string;
+  }) => {
+    const loggedInUser = await api.verifyPhoneOtp(payload);
+    setUser(loggedInUser);
+    return loggedInUser;
+  };
+
+  const switchRole = async (role: UserRole) => {
+    const updatedUser = await api.switchRole(role);
+    setUser(updatedUser);
+    return updatedUser;
   };
 
   const loginAsDemo = async (role: UserRole) => {
@@ -44,8 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(loggedInUser);
   };
 
-  const signup = async (name: string, email: string, department?: string, role?: UserRole) => {
-    const newUser = await api.signup({ name, email, department, role });
+  const signup = async (name: string, email: string, department?: string, role?: UserRole, phoneNumber?: string) => {
+    const newUser = await api.signup({ name, email, department, role, phoneNumber });
     setUser(newUser);
   };
 
@@ -67,6 +117,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         login,
+        loginWithGoogle,
+        sendPhoneOtp,
+        verifyPhoneOtp,
+        switchRole,
         loginAsDemo,
         signup,
         logout,
