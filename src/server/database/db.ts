@@ -88,6 +88,50 @@ class DatabaseStore {
       courseDifficulty: 'calibrated_minus_10',
       assessmentFrequency: 'weekly',
     },
+    {
+      id: 'scen-formative-shift',
+      name: 'Counterfactual Alpha: Formative Weighting Shift',
+      description: 'Shift 10% weight from high-stakes midterm into continuous formative quizzes with weekly diagnostic feedback.',
+      courseOrdering: [
+        { courseId: 'course-cs201', originalSemester: 3, newSemester: 3 },
+        { courseId: 'course-math202', originalSemester: 3, newSemester: 3 },
+        { courseId: 'course-cs304', originalSemester: 4, newSemester: 4 },
+        { courseId: 'course-cs305', originalSemester: 5, newSemester: 5 },
+        { courseId: 'course-cs401', originalSemester: 7, newSemester: 7 },
+      ],
+      prerequisiteRelationship: 'strengthened_bridge',
+      assessmentWeightage: {
+        midtermWeight: 20,
+        quizWeight: 35,
+        assignmentWeight: 20,
+        finalWeight: 25,
+      },
+      learningIntervention: 'adaptive_quiz_scaffolding',
+      courseDifficulty: 'unchanged',
+      assessmentFrequency: 'weekly',
+    },
+    {
+      id: 'scen-peer-assisted',
+      name: 'Peer-Assisted Lab Mentorship & Concurrency Review',
+      description: 'Pair struggling students in Operating Systems threads with senior student lab mentors.',
+      courseOrdering: [
+        { courseId: 'course-cs201', originalSemester: 3, newSemester: 3 },
+        { courseId: 'course-math202', originalSemester: 3, newSemester: 3 },
+        { courseId: 'course-cs304', originalSemester: 4, newSemester: 4 },
+        { courseId: 'course-cs305', originalSemester: 5, newSemester: 5 },
+        { courseId: 'course-cs401', originalSemester: 7, newSemester: 7 },
+      ],
+      prerequisiteRelationship: 'standard',
+      assessmentWeightage: {
+        midtermWeight: 30,
+        quizWeight: 20,
+        assignmentWeight: 25,
+        finalWeight: 25,
+      },
+      learningIntervention: 'peer_assisted_labs',
+      courseDifficulty: 'unchanged',
+      assessmentFrequency: 'biweekly',
+    },
   ];
 
   // User Auth & Session Store

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Loader2, ArrowRight, ArrowLeft, Mail, Phone, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { UserRole } from '../types.ts';
+import { EduForensicsLogo } from '../components/common/EduForensicsLogo.tsx';
 
 export const SignupPage: React.FC<{ navigate: (path: string) => void }> = ({ navigate }) => {
   const { signup, loginWithGoogle } = useAuth();
@@ -49,18 +50,8 @@ export const SignupPage: React.FC<{ navigate: (path: string) => void }> = ({ nav
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
       <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 p-8 shadow-xs">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-red-700 text-white flex items-center justify-center font-bold text-xs font-mono">
-              EF
-            </div>
-            <div>
-              <span className="text-lg font-bold tracking-tight text-slate-900 font-mono">
-                EDUFORENSICS
-              </span>
-              <p className="text-[10px] text-red-700 font-mono font-semibold uppercase leading-none">
-                Intelligence Deployment
-              </p>
-            </div>
+          <div className="cursor-pointer" onClick={() => navigate('/')}>
+            <EduForensicsLogo size="sm" subtext="Intelligence Deployment" />
           </div>
           <span className="text-xs font-mono px-2.5 py-1 rounded bg-slate-100 text-slate-700 font-medium">
             Role Setup

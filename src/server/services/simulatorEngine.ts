@@ -2,7 +2,26 @@ import { db } from '../database/db.ts';
 import { SimulationScenarioSettings, SimulationComparisonResult } from '../database/types.ts';
 
 export class SimulatorEngine {
-  public static run(settings: SimulationScenarioSettings): SimulationComparisonResult {
+  public static run(settings?: SimulationScenarioSettings): SimulationComparisonResult {
+    const safeSettings: SimulationScenarioSettings = {
+      name: settings?.name || 'Targeted Remedial Bridge + Formative Scaffolding',
+      description: settings?.description || 'Curriculum intervention simulation scenario.',
+      courseOrdering: settings?.courseOrdering || [
+        { courseId: 'course-math202', originalSemester: 3, newSemester: 3 },
+        { courseId: 'course-cs305', originalSemester: 5, newSemester: 5 },
+      ],
+      prerequisiteRelationship: settings?.prerequisiteRelationship || 'strengthened_bridge',
+      assessmentWeightage: {
+        midtermWeight: settings?.assessmentWeightage?.midtermWeight ?? 25,
+        quizWeight: settings?.assessmentWeightage?.quizWeight ?? 30,
+        assignmentWeight: settings?.assessmentWeightage?.assignmentWeight ?? 20,
+        finalWeight: settings?.assessmentWeightage?.finalWeight ?? 25,
+      },
+      learningIntervention: settings?.learningIntervention || 'targeted_remedial_prerequisite',
+      courseDifficulty: settings?.courseDifficulty || 'calibrated_minus_10',
+      assessmentFrequency: settings?.assessmentFrequency || 'weekly',
+    };
+
     // Deterministic simulation model
     const baseline = {
       predictedMastery: 61.4,
@@ -18,53 +37,52 @@ export class SimulatorEngine {
     let studentsSaved = 0;
 
     // Prerequisite intervention impact
-    if (settings.prerequisiteRelationship === 'strengthened_bridge') {
+    if (safeSettings.prerequisiteRelationship === 'strengthened_bridge') {
       masteryBonus += 7.5;
       riskReduction += 11.2;
       bottleneckReduction += 1;
       studentsSaved += 95;
-    } else if (settings.prerequisiteRelationship === 'relaxed_concurrent') {
+    } else if (safeSettings.prerequisiteRelationship === 'relaxed_concurrent') {
       masteryBonus -= 3.1;
       riskReduction -= 4.5;
       studentsSaved -= 25;
     }
 
     // Learning intervention impact
-    if (settings.learningIntervention === 'targeted_remedial_prerequisite') {
+    if (safeSettings.learningIntervention === 'targeted_remedial_prerequisite') {
       masteryBonus += 6.8;
       riskReduction += 10.4;
       bottleneckReduction += 2;
       studentsSaved += 110;
-    } else if (settings.learningIntervention === 'adaptive_quiz_scaffolding') {
+    } else if (safeSettings.learningIntervention === 'adaptive_quiz_scaffolding') {
       masteryBonus += 5.2;
       riskReduction += 8.1;
       bottleneckReduction += 1;
       studentsSaved += 78;
-    } else if (settings.learningIntervention === 'peer_assisted_labs') {
+    } else if (safeSettings.learningIntervention === 'peer_assisted_labs') {
       masteryBonus += 3.4;
       riskReduction += 5.0;
       studentsSaved += 45;
     }
 
     // Assessment weightage calibration
-    // If high-stakes midterm is lowered and formative quizzes raised:
-    if (settings.assessmentWeightage.midtermWeight < 30 && settings.assessmentWeightage.quizWeight >= 25) {
+    if (safeSettings.assessmentWeightage.midtermWeight < 30 && safeSettings.assessmentWeightage.quizWeight >= 25) {
       masteryBonus += 2.8;
       riskReduction += 4.9;
       studentsSaved += 40;
     }
 
     // Assessment frequency impact
-    if (settings.assessmentFrequency === 'weekly') {
+    if (safeSettings.assessmentFrequency === 'weekly') {
       masteryBonus += 2.1;
       riskReduction += 3.2;
     }
 
     // Course difficulty calibration
-    if (settings.courseDifficulty === 'calibrated_minus_10') {
+    if (safeSettings.courseDifficulty === 'calibrated_minus_10') {
       masteryBonus += 3.0;
       riskReduction += 4.5;
-    } else if (settings.courseDifficulty === 'rigorous_plus_10') {
+    } else if (safeSettings.courseDifficulty === 'rigorous_plus_10') {
       masteryBonus -= 2.5;
       riskReduction -= 3.8;
     }
@@ -82,11 +100,7 @@ export class SimulatorEngine {
       studentsSaved: baseline.affectedStudents - scenarioStudents,
     };
 
-    const causalExplanation = `Counterfactual simulation indicates that strengthening the prerequisite bridge and introducing ${
-      settings.learningIntervention.replace(/_/g, ' ')
-    } reduces dependency pressure on Differential Equations by +${delta.masteryChange}% mastery points. Distributing formative evaluations via ${
-      settings.assessmentFrequency
-    } cadence detects early misconceptions before high-stakes evaluations, effectively preventing failure propagation into subsequent semesters.`;
+    const causalExplanation = `Counterfactual simulation indicates that strengthening the prerequisite bridge and introducing ${(safeSettings.learningIntervention || '').replace(/_/g, ' ')} reduces dependency pressure on downstream coursework by +${delta.masteryChange}% mastery points. Distributing formative evaluations via ${safeSettings.assessmentFrequency} cadence detects early misconceptions before high-stakes evaluations, effectively preventing failure propagation into subsequent semesters.`;
 
     const conceptImpacts = [
       {
@@ -121,7 +135,7 @@ export class SimulatorEngine {
 
     const result: SimulationComparisonResult = {
       id: `sim-${Date.now()}`,
-      name: settings.name || 'Custom Educational Intervention Scenario',
+      name: safeSettings.name,
       timestamp: new Date().toISOString(),
       baseline,
       scenario: {
@@ -141,7 +155,7 @@ export class SimulatorEngine {
     db.logAudit(
       'INSTITUTION_ADMIN',
       'SIMULATION_EXECUTED',
-      settings.name,
+      safeSettings.name,
       `Calculated counterfactual delta: ${delta.riskChange}% risk, +${delta.masteryChange}% mastery.`
     );
 

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { UserRole } from '../../types.ts';
+import { EduForensicsLogo } from '../common/EduForensicsLogo.tsx';
 
 interface AppShellProps {
   currentPath: string;
@@ -141,19 +142,9 @@ export const AppShell: React.FC<AppShellProps> = ({ currentPath, navigate, child
               navigate('/dashboard');
               setIsMobileMenuOpen(false);
             }}
-            className="flex items-center gap-2.5 cursor-pointer group"
+            className="cursor-pointer group hover:opacity-95 transition-opacity"
           >
-            <div className="w-8 h-8 rounded-lg bg-red-700 text-white flex items-center justify-center font-bold font-mono tracking-wider shadow-xs group-hover:bg-red-800 transition-colors">
-              EF
-            </div>
-            <div>
-              <span className="font-bold text-slate-900 tracking-tight text-sm">
-                EDUFORENSICS
-              </span>
-              <p className="text-[10px] uppercase font-mono tracking-widest text-red-700 font-semibold leading-none">
-                Intelligence
-              </p>
-            </div>
+            <EduForensicsLogo size="sm" subtext="Intelligence" theme="dark" />
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(false)}

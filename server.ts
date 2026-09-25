@@ -400,29 +400,39 @@ app.post('/api/digital-twin/trace', authenticate, (req: Request, res: Response) 
 // -------------------------------------------------------------
 // WHAT-IF SIMULATOR API
 // -------------------------------------------------------------
-app.post('/api/simulator/run', authenticate, requireRoles(['SUPER_ADMIN', 'INSTITUTION_ADMIN']), (req: Request, res: Response) => {
-  const settings = req.body;
-  const comparison = SimulatorEngine.run(settings);
-  res.json(comparison);
+app.post('/api/simulator/run', authenticate, (req: Request, res: Response) => {
+  try {
+    const settings = req.body;
+    const comparison = SimulatorEngine.run(settings);
+    res.json(comparison);
+  } catch (simErr: any) {
+    console.error('SimulatorEngine Error:', simErr);
+    res.status(500).json({ error: simErr.message || 'Simulation execution failed.' });
+  }
 });
 
 app.get('/api/simulator/scenarios', authenticate, (req: Request, res: Response) => {
   res.json(db.savedScenarios);
 });
 
-app.post('/api/simulator/scenarios', authenticate, requireRoles(['SUPER_ADMIN', 'INSTITUTION_ADMIN']), (req: Request, res: Response) => {
-  const newScenario = {
-    ...req.body,
-    id: `scen-${Date.now()}`,
-  };
-  db.savedScenarios.push(newScenario);
-  db.logAudit(
-    (req as any).user.email,
-    'SCENARIO_SAVED',
-    newScenario.name,
-    'Persisted counterfactual curriculum simulation parameter set.'
-  );
-  res.status(201).json(newScenario);
+app.post('/api/simulator/scenarios', authenticate, (req: Request, res: Response) => {
+  try {
+    const newScenario = {
+      ...req.body,
+      id: `scen-${Date.now()}`,
+    };
+    db.savedScenarios.push(newScenario);
+    db.logAudit(
+      (req as any).user?.email || 'SYSTEM',
+      'SCENARIO_SAVED',
+      newScenario.name || 'Untitled Scenario',
+      'Persisted counterfactual curriculum simulation parameter set.'
+    );
+    res.status(201).json(newScenario);
+  } catch (saveErr: any) {
+    console.error('Scenario Save Error:', saveErr);
+    res.status(500).json({ error: saveErr.message || 'Failed to save scenario.' });
+  }
 });
 
 // -------------------------------------------------------------

@@ -12,6 +12,7 @@ import {
   LineChart,
 } from 'lucide-react';
 import heroImage from '../assets/images/eduforensics_hero_twin_1790243544963.jpg';
+import { EduForensicsLogo } from '../components/common/EduForensicsLogo.tsx';
 
 interface LandingPageProps {
   navigate: (path: string) => void;
@@ -26,14 +27,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ navigate }) => {
           {/* Zone 1: Single text element wordmark */}
           <div
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 cursor-pointer"
+            className="cursor-pointer hover:opacity-95 transition-opacity"
           >
-            <div className="w-7 h-7 rounded-lg bg-red-700 text-white flex items-center justify-center font-bold text-xs font-mono">
-              EF
-            </div>
-            <span className="text-lg font-bold tracking-tight text-slate-900">
-              EDUFORENSICS
-            </span>
+            <EduForensicsLogo size="sm" subtext="Intelligence & Digital Twin" />
           </div>
 
           {/* Zone 2: Clean text navigation links */}
@@ -338,11 +334,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ navigate }) => {
 
       {/* FOOTER */}
       <footer className="py-8 px-6 border-t border-slate-200 text-xs text-slate-500 max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2 font-mono">
-          <span className="font-bold text-slate-900">EDUFORENSICS</span>
-          <span>·</span>
-          <span>Institutional Intelligence System</span>
-        </div>
+        <EduForensicsLogo size="xs" subtext="Institutional Intelligence System" />
         <p>© 2026 EDUFORENSICS Intelligence Platform. All rights reserved.</p>
       </footer>
     </div>

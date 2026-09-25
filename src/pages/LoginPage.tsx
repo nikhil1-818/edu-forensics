@@ -21,6 +21,7 @@ import {
 import { useAuth } from '../context/AuthContext.tsx';
 import { UserRole } from '../types.ts';
 import loginVisual from '../assets/images/eduforensics_login_visual_1790243554712.jpg';
+import { EduForensicsLogo } from '../components/common/EduForensicsLogo.tsx';
 
 interface LoginPageProps {
   navigate: (path: string) => void;
@@ -252,19 +253,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ navigate }) => {
         <div className="relative z-10">
           <div
             onClick={() => navigate('/')}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="cursor-pointer group hover:opacity-95 transition-opacity"
           >
-            <div className="w-9 h-9 rounded-xl bg-red-700 text-white flex items-center justify-center font-bold font-mono text-sm shadow-md group-hover:bg-red-800 transition-colors">
-              EF
-            </div>
-            <div>
-              <span className="text-xl font-bold tracking-tight text-white font-mono">
-                EDUFORENSICS
-              </span>
-              <p className="text-[10px] uppercase font-mono tracking-widest text-red-400 font-semibold leading-none">
-                AI-Powered Digital Twin
-              </p>
-            </div>
+            <EduForensicsLogo size="lg" theme="light" subtext="AI-Powered Digital Twin" />
           </div>
 
           <div className="mt-14 max-w-lg">
@@ -353,13 +344,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ navigate }) => {
         <div className="w-full max-w-xl my-auto">
           {/* Header */}
           <div className="mb-6">
-            <div className="lg:hidden flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-red-700 text-white flex items-center justify-center font-bold text-xs font-mono">
-                EF
-              </div>
-              <span className="text-lg font-bold tracking-tight text-slate-900 font-mono">
-                EDUFORENSICS
-              </span>
+            <div className="lg:hidden mb-4 cursor-pointer" onClick={() => navigate('/')}>
+              <EduForensicsLogo size="sm" subtext="Intelligence Platform" />
             </div>
 
             <div className="flex items-center justify-between">
