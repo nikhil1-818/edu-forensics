@@ -161,13 +161,13 @@ app.post('/api/auth/google', (req: Request, res: Response) => {
     }
 
     if (!targetEmail || targetEmail.trim() === '') {
-      targetEmail = 'nikhiltyagi8093@gmail.com';
+      targetEmail = 'academic.user@gmail.com';
     }
-    if (!targetName || targetName.trim() === '') {
-      targetName = 'Nikhil Tyagi';
-    }
-
     targetEmail = targetEmail.trim().toLowerCase();
+
+    if (!targetName || targetName.trim() === '') {
+      targetName = targetEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+    }
 
     // Check if user already exists
     let user = db.users.find(u => u.email.toLowerCase() === targetEmail);

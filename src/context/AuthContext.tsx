@@ -116,8 +116,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return loggedInUser;
     } catch (err: any) {
       console.warn('Backend Google Auth fallback engaged:', err);
-      const emailToUse = payload?.email?.trim() || 'nikhiltyagi8093@gmail.com';
-      const nameToUse = payload?.name?.trim() || 'Nikhil Tyagi';
+      const emailToUse = payload?.email?.trim() || 'academic.user@gmail.com';
+      const nameToUse = payload?.name?.trim() || emailToUse.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
       const targetRole = payload?.role || 'INSTITUTION_ADMIN';
       const fallbackUser: User = {
         id: `usr-g-${Date.now()}`,
